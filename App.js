@@ -1,20 +1,25 @@
 import {
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   View,
   Alert,
   TouchableOpacity,
   ActivityIndicator,
-  Platform,
-  StatusBar
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import moment from 'moment';
-import WeatherCard from './WeatherCard';
-import MapView from "react-native-maps";
-
+import WeatherCard from './app/components/WeatherCard';
+import MapCard from './app/components/MapCard';
+import { styles } from "./AppStyles"
+import { 
+  HEADER, 
+  FOOTER, 
+  RELOAD, 
+  DATA_UNAVAILABLE, 
+  WEATHER_API,
+  COORDINATE_API
+} from './app/components/Constants';
 
 export default function App() {
 
@@ -31,7 +36,7 @@ export default function App() {
     longitudeDelta: 0.0421
   });
 
-  const today = moment().add(-1, 'days')
+  const yesterday = moment().add(-1, 'days')
 
   useEffect(() => {
     getGrid()
@@ -48,7 +53,7 @@ export default function App() {
 
     try {
       const response = await fetch(
-        `https://api.weather.gov/points/${region.latitude},${region.longitude}`
+        COORDINATE_API.replace("##latitude##",region.latitude).replace("##longitude##",region.longitude)
       );
       const json = await response.json();
 
@@ -56,7 +61,7 @@ export default function App() {
         setGridX(json.properties.gridX)
         setGridY(json.properties.gridY)
       } else {
-        Alert.alert("Data Unavailable For Requested Point")
+        Alert.alert(DATA_UNAVAILABLE)
       }
 
       setLoading(false)
@@ -70,7 +75,7 @@ export default function App() {
     setLoading(true)
     try {
       const response = await fetch(
-        `https://api.weather.gov/gridpoints/AKQ/${gridX},${gridY}/forecast/hourly?units=si`
+        WEATHER_API.replace("##GridX##", gridX).replace("##GridY##", gridY)
       );
       const json = await response.json();
 
@@ -105,7 +110,7 @@ export default function App() {
   const feedData = (newArray) => {
     let finalArray = []
     for (let i = 0; i < 7; i++) {
-      let day = today.add(1, "day").format("DD-MM-YYYY")
+      let day = yesterday.add(1, "day").format("DD-MM-YYYY")
 
       let daywiseArray = newArray.filter((item) => item.Date == day)
       let sortedArray = daywiseArray.sort((a, b) => (a.Temp) - (b.Temp))
@@ -130,23 +135,11 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container} >
-      <Text style={[styles.text, { marginBottom: 10 }]}> Welcome to weather app!</Text>
+      <Text style={[styles.text, { marginBottom: 10 }]}>{HEADER}</Text>
       {
         isLoading ? <ActivityIndicator /> :
         <>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: region.latitude,
-              longitude: region.longitude,
-              latitudeDelta: region.latitudeDelta,
-              longitudeDelta: region.longitudeDelta,
-            }}
-            onRegionChangeComplete={(region) => setRegion(region)}
-          />
-          <Text style={styles.text}>Current latitude: {region.latitude}</Text>
-          <Text style={styles.text}>Current longitude: {region.longitude}</Text>
-
+          <MapCard region = {region}  setRegion={setRegion}/>
           <ScrollView showsVerticalScrollIndicator={false}>
             {
               myData.map((item, index) => {
@@ -159,61 +152,13 @@ export default function App() {
             }
           </ScrollView>
           <TouchableOpacity onPress={onPressReload} style={styles.btn}>
-            <Text style={{ color: "white", fontWeight: "bold", fontFamily: Platform.OS == "ios" ? "Futura" : "monospace" }}>Reload</Text>
+            <Text style={styles.btnText}>{RELOAD}</Text>
           </TouchableOpacity>
           <View>
-            <Text style={[styles.text,{fontSize:10}]}>Data Source : https://www.weather.gov/documentation/services-web-api</Text>
+            <Text style={[styles.text,{fontSize:10}]}>{FOOTER}</Text>
           </View>
         </>
       }
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#E3F4FE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: Platform.OS == "android" ? StatusBar.currentHeight : 0
-  },
-  btn: {
-    height: 70,
-    width: 70,
-    borderRadius: 35,
-    borderColor: "#e3f4fe",
-    borderWidth: 2,
-    backgroundColor: "#f58008",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-    shadowColor: '#171717',
-    shadowOffset: { width: -2, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 10,
-    position: "absolute",
-    top: "14%",
-    left: "78%"
-  },
-  input: {
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-    padding: 10,
-    width: 100
-  },
-  map: {
-    height: 200,
-    width: "90%",
-    marginVertical: 20,
-    borderRadius: 10,
-  },
-  text: {
-  fontFamily: Platform.OS == "ios" ? "Futura" : "monospace",
-    fontSize: Platform.OS == "ios" ? 18 : 15,
-    color:"#000C66"
-  }
-});
-

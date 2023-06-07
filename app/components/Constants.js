@@ -1,0 +1,6 @@
+export const HEADER = "Welcome to weather app!"
+export const FOOTER = "Data Source : https://www.weather.gov/documentation/services-web-api"
+export const RELOAD = "Reload"
+export const DATA_UNAVAILABLE = "Data Unavailable For Requested Point"
+export const WEATHER_API = "https://api.weather.gov/gridpoints/AKQ/##GridX##,##GridY##/forecast/hourly?units=si"
+export const COORDINATE_API = "https://api.weather.gov/points/##latitude##,##longitude##"
